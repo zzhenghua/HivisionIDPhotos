@@ -75,23 +75,23 @@ async def idphoto_inference(
     sharpen_strength: float = Form(0),
     saturation_strength: float = Form(0),
 ):  
-    # 如果传入了base64，则直接使用base64解码
-    if input_image_base64:
-        img = base64_2_numpy(input_image_base64)
-    # 否则使用上传的图片
-    else:
-        image_bytes = await input_image.read()
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        # 将BGR转换为RGB
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # ------------------- 选择抠图与人脸检测模型 -------------------
-    choose_handler(creator, human_matting_model, face_detect_model)
-
-    # 将字符串转为元组
-    size = (int(height), int(width))
     try:
+        # 如果传入了base64，则直接使用base64解码
+        if input_image_base64:
+            img = base64_2_numpy(input_image_base64)
+        # 否则使用上传的图片
+        else:
+            image_bytes = await input_image.read()
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # 将BGR转换为RGB
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # ------------------- 选择抠图与人脸检测模型 -------------------
+        choose_handler(creator, human_matting_model, face_detect_model)
+
+        # 将字符串转为元组
+        size = (int(height), int(width))
         result = creator(
             img,
             size=size,
@@ -105,10 +105,7 @@ async def idphoto_inference(
             sharpen_strength=sharpen_strength,
             saturation_strength=saturation_strength,
         )
-    except FaceError:
-        result_message = {"status": False}
-    # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
-    else:
+        
         result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
         result_message = {
             "status": True,
@@ -119,6 +116,14 @@ async def idphoto_inference(
         if hd:
             result_image_hd_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.hd, cv2.COLOR_RGBA2BGRA), None, dpi)
             result_message["image_base64_hd"] = bytes_2_base64(result_image_hd_bytes)
+
+    except FaceError:
+        result_message = {"status": False}
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        import traceback
+        traceback.print_exc()
+        result_message = {"status": False, "error": str(e)}
 
     return result_message
 
@@ -131,31 +136,35 @@ async def human_matting_inference(
     human_matting_model: str = Form("hivision_modnet"),
     dpi: int = Form(300),
 ):
-    if input_image_base64:
-        img = base64_2_numpy(input_image_base64)
-    else:
-        image_bytes = await input_image.read()
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-    # ------------------- 选择抠图与人脸检测模型 -------------------
-    choose_handler(creator, human_matting_model, None)
-
     try:
+        if input_image_base64:
+            img = base64_2_numpy(input_image_base64)
+        else:
+            image_bytes = await input_image.read()
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        # ------------------- 选择抠图与人脸检测模型 -------------------
+        choose_handler(creator, human_matting_model, None)
+
         result = creator(
             img,
             change_bg_only=True,
         )
-    except FaceError:
-        result_message = {"status": False}
-    # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
-    else:
+        
         result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.matting, cv2.COLOR_RGBA2BGRA), None, dpi)
         
         result_message = {
             "status": True,
             "image_base64": bytes_2_base64(result_image_standard_bytes),
         }
+    except FaceError:
+        result_message = {"status": False}
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        import traceback
+        traceback.print_exc()
+        result_message = {"status": False, "error": str(e)}
 
     return result_message
 
@@ -340,19 +349,19 @@ async def idphoto_crop_inference(
     top_distance_max: float = Form(0.12),
     top_distance_min: float = Form(0.10),
 ):
-    if input_image_base64:
-        img = base64_2_numpy(input_image_base64)
-    else:
-        image_bytes = await input_image.read()
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)  # 读取图像(4通道)
-
-    # ------------------- 选择抠图与人脸检测模型 -------------------
-    choose_handler(creator, face_detect_option=face_detect_model)
-
-    # 将字符串转为元组
-    size = (int(height), int(width))
     try:
+        if input_image_base64:
+            img = base64_2_numpy(input_image_base64)
+        else:
+            image_bytes = await input_image.read()
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)  # 读取图像(4通道)
+
+        # ------------------- 选择抠图与人脸检测模型 -------------------
+        choose_handler(creator, face_detect_option=face_detect_model)
+
+        # 将字符串转为元组
+        size = (int(height), int(width))
         result = creator(
             img,
             size=size,
@@ -361,10 +370,7 @@ async def idphoto_crop_inference(
             head_top_range=(top_distance_max, top_distance_min),
             crop_only=True,
         )
-    except FaceError:
-        result_message = {"status": False}
-    # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
-    else:
+        
         result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
         
         result_message = {
@@ -376,6 +382,14 @@ async def idphoto_crop_inference(
         if hd:
             result_image_hd_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.hd, cv2.COLOR_RGBA2BGRA), None, dpi)
             result_message["image_base64_hd"] = bytes_2_base64(result_image_hd_bytes)
+            
+    except FaceError:
+        result_message = {"status": False}
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        import traceback
+        traceback.print_exc()
+        result_message = {"status": False, "error": str(e)}
 
     return result_message
 
