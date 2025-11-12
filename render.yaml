@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: HivisionIDPhotos
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python deploy_api.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
