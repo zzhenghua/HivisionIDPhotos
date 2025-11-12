@@ -1,7 +1,15 @@
-opencv-python>=4.8.1.78
-onnxruntime>=1.15.0
-numpy<=1.26.4
-requests
-mtcnn-runtime
-tqdm
-starlette
+# 核心依赖
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+
+# 图像处理 (使用轻量版本)
+opencv-python-headless==4.8.1.78
+numpy==1.24.3
+pillow==10.1.0
+
+# ONNX推理
+onnxruntime==1.16.3
+
+# 可选: 监控和日志
+python-json-logger==2.0.7

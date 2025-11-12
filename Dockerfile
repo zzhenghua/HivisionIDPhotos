@@ -1,21 +1,31 @@
-FROM python:3.10-slim
+# 使用轻量基础镜像
+FROM python:3.9-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
+# 设置工作目录
 WORKDIR /app
 
-COPY requirements.txt requirements-app.txt ./
+# 复制依赖文件
+COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt -r requirements-app.txt
+# 安装系统依赖 (最小化)
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-COPY . .
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 7860
-EXPOSE 8080
+# 复制应用代码
+COPY app/ ./app/
 
-CMD ["python3", "-u", "app.py", "--host", "0.0.0.0", "--port", "7860"]
+# 创建非root用户
+RUN useradd -m -u 1000 renderuser && chown -R renderuser:renderuser /app
+USER renderuser
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
