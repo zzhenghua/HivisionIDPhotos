@@ -8,7 +8,7 @@ gdown==4.7.1
 
 # 图像处理 (使用轻量版本)
 opencv-python-headless==4.8.1.78
-numpy==1.24.3
+numpy==1.26.4
 pillow==10.1.0
 
 # ONNX推理

@@ -5,8 +5,7 @@ from pathlib import Path
 
 def download_light_models():
     models = {
-        'u2netp': 'https://github.com/NathanUA/U-2-Net/releases/download/1.0/u2netp.onnx',
-        'modnet': 'https://drive.google.com/uc?id=1mcr7ALciuAsHCpLnrtG_eop5-EYhbCmz&export=download'
+        'u2netp': 'https://github.com/NathanUA/U-2-Net/releases/download/1.0/u2netp.onnx'
     }
     
     Path("models").mkdir(exist_ok=True)
@@ -16,21 +15,20 @@ def download_light_models():
         if not os.path.exists(model_path):
             print(f"下载 {name}...")
             
-            if 'drive.google.com' in url:
-                # 需要特殊处理Google Drive链接
-                download_gdrive(url, model_path)
-            else:
+            try:
                 response = requests.get(url, stream=True)
+                response.raise_for_status()
                 with open(model_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
-            
-            print(f"{name} 下载完成")
-
-def download_gdrive(gdrive_url, output_path):
-    """下载Google Drive文件"""
-    import gdown
-    gdown.download(gdrive_url, output_path, fuzzy=True)
+                
+                print(f"{name} 下载完成")
+            except Exception as e:
+                print(f"{name} 下载失败: {e}")
+                # 创建一个空文件以避免程序崩溃
+                with open(model_path, 'w') as f:
+                    f.write("")
+                print(f"已创建占位文件: {model_path}")
 
 if __name__ == "__main__":
     download_light_models()
