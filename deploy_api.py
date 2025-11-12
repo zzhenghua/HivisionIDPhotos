@@ -1,3 +1,16 @@
+import sys
+import os
+
+# 添加Render环境中的包路径
+packages_path = '/opt/render/project/src/packages'
+if os.path.exists(packages_path):
+    sys.path.insert(0, packages_path)
+    print(f"✅ 已添加包路径: {packages_path}")
+else:
+    print(f"❌ 包路径不存在: {packages_path}")
+
+print(f"Python路径: {sys.path}")
+
 from fastapi import FastAPI, UploadFile, Form, File
 from hivision import IDCreator
 from hivision.error import FaceError
