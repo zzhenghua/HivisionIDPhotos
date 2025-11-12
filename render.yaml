@@ -3,8 +3,8 @@ services:
     name: HivisionIDPhotos
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt && python scripts/download_model.py --models modnet_photographic_portrait_matting hivision_modnet rmbg-1.4"
+    buildCommand: "pip install -r requirements.txt && pip install -r requirements-app.txt && python scripts/download_model.py --models modnet_photographic_portrait_matting hivision_modnet rmbg-1.4"
     startCommand: "python deploy_api.py"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18
+        value: 3.10.6
