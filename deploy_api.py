@@ -109,8 +109,7 @@ async def idphoto_inference(
         result_message = {"status": False}
     # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
     else:
-        result_image_standard_bytes = save_image_dpi_to_bytes(result.standard, None, dpi)
-        
+        result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
         result_message = {
             "status": True,
             "image_base64_standard": bytes_2_base64(result_image_standard_bytes),
@@ -118,7 +117,7 @@ async def idphoto_inference(
 
         # 如果hd为True, 则增加高清照结果（png 4通道图像）
         if hd:
-            result_image_hd_bytes = save_image_dpi_to_bytes(result.hd, None, dpi)
+            result_image_hd_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.hd, cv2.COLOR_RGBA2BGRA), None, dpi)
             result_message["image_base64_hd"] = bytes_2_base64(result_image_hd_bytes)
 
     return result_message
@@ -149,13 +148,15 @@ async def human_matting_inference(
         )
     except FaceError:
         result_message = {"status": False}
-
+    # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
     else:
-        result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
+        result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.matting, cv2.COLOR_RGBA2BGRA), None, dpi)
+        
         result_message = {
             "status": True,
             "image_base64": bytes_2_base64(result_image_standard_bytes),
         }
+
     return result_message
 
 
