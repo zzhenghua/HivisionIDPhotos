@@ -6,10 +6,10 @@ services:
     branch: main
     
     # 构建命令 - 单行写法
-    buildCommand: pip install -r requirements.txt && mkdir -p app/models && python app/download_model.py
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && mkdir -p app/models && python app/download_models.py
     
     # 启动命令
-    startCommand: cd app && python -m uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
     
     # 环境变量
     envVars:
