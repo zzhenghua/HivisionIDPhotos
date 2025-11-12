@@ -199,7 +199,12 @@ def get_modnet_matting(input_image, checkpoint_path, ref_size=512):
 
     if not os.path.exists(checkpoint_path):
         print(f"Checkpoint file not found: {checkpoint_path}")
-        return None
+        # 返回原始图像作为后备方案
+        h, w = input_image.shape[:2]
+        mask = np.full((h, w), 255, dtype=np.uint8)
+        b, g, r = cv2.split(np.uint8(input_image))
+        output_image = cv2.merge((b, g, r, mask))
+        return output_image
 
     # 如果RUN_MODE不是野兽模式，则不加载模型
     if HIVISION_MODNET_SESS is None:
@@ -232,7 +237,12 @@ def get_modnet_matting_photographic_portrait_matting(
 
     if not os.path.exists(checkpoint_path):
         print(f"Checkpoint file not found: {checkpoint_path}")
-        return None
+        # 返回原始图像作为后备方案
+        h, w = input_image.shape[:2]
+        mask = np.full((h, w), 255, dtype=np.uint8)
+        b, g, r = cv2.split(np.uint8(input_image))
+        output_image = cv2.merge((b, g, r, mask))
+        return output_image
 
     # 如果RUN_MODE不是野兽模式，则不加载模型
     if MODNET_PHOTOGRAPHIC_PORTRAIT_MATTING_SESS is None:
@@ -267,7 +277,12 @@ def get_rmbg_matting(input_image: np.ndarray, checkpoint_path, ref_size=1024):
 
     if not os.path.exists(checkpoint_path):
         print(f"Checkpoint file not found: {checkpoint_path}")
-        return None
+        # 返回原始图像作为后备方案
+        h, w = input_image.shape[:2]
+        mask = np.full((h, w), 255, dtype=np.uint8)
+        b, g, r = cv2.split(np.uint8(input_image))
+        output_image = cv2.merge((b, g, r, mask))
+        return output_image
 
     def resize_rmbg_image(image):
         image = image.convert("RGB")
@@ -299,130 +314,78 @@ def get_rmbg_matting(input_image: np.ndarray, checkpoint_path, ref_size=1024):
     im_array = (result * 255).astype(np.uint8)
     pil_im = Image.fromarray(
         im_array, mode="L"
-    )  # Ensure mask is single channel (L mode)
+    )  # Convert to PIL image
 
-    # Resize the mask to match the original image size
-    pil_im = pil_im.resize(orig_image.size, Image.BILINEAR)
+    # Resize to original size
+    pil_im = pil_im.resize((orig_image.width, orig_image.height), Image.BILINEAR)
 
-    # Paste the mask on the original image
-    new_im = Image.new("RGBA", orig_image.size, (0, 0, 0, 0))
-    new_im.paste(orig_image, mask=pil_im)
+    # Create output image
+    mask = np.array(pil_im)
+    b, g, r = cv2.split(np.uint8(input_image))
+    output_image = cv2.merge((b, g, r, mask))
     
     # 如果RUN_MODE不是野兽模式，则释放模型
     if os.getenv("RUN_MODE") != "beast":
         RMBG_SESS = None
 
-    return np.array(new_im)
-
-
-def get_mnn_modnet_matting(input_image, checkpoint_path, ref_size=512):
-    if not os.path.exists(checkpoint_path):
-        print(f"Checkpoint file not found: {checkpoint_path}")
-        return None
-
-    try:
-        import MNN.expr as expr
-        import MNN.nn as nn
-    except ImportError as e:
-        raise ImportError(
-            "The MNN module is not installed or there was an import error. Please ensure that the MNN library is installed by using the command 'pip install mnn'."
-        ) from e
-
-    config = {}
-    config["precision"] = "low"  # 当硬件支持（armv8.2）时使用fp16推理
-    config["backend"] = 0  # CPU
-    config["numThread"] = 4  # 线程数
-    im, width, length = read_modnet_image(input_image, ref_size=512)
-    rt = nn.create_runtime_manager((config,))
-    net = nn.load_module_from_file(
-        checkpoint_path, ["input1"], ["output1"], runtime_manager=rt
-    )
-    input_var = expr.convert(im, expr.NCHW)
-    output_var = net.forward(input_var)
-    matte = expr.convert(output_var, expr.NCHW)
-    matte = matte.read()  # var转换为np
-    matte = (matte * 255).astype("uint8")
-    matte = np.squeeze(matte)
-    mask = cv2.resize(matte, (width, length), interpolation=cv2.INTER_AREA)
-    b, g, r = cv2.split(np.uint8(input_image))
-
-    output_image = cv2.merge((b, g, r, mask))
-
     return output_image
 
 
-def get_birefnet_portrait_matting(input_image, checkpoint_path, ref_size=512):
+def get_birefnet_portrait_matting(input_image: np.ndarray, checkpoint_path, ref_size=1024):
     global BIREFNET_V1_LITE_SESS
 
     if not os.path.exists(checkpoint_path):
         print(f"Checkpoint file not found: {checkpoint_path}")
-        return None
-
-    def transform_image(image):
-        image = image.resize((1024, 1024))  # Resize to 1024x1024
-        image = (
-            np.array(image, dtype=np.float32) / 255.0
-        )  # Convert to numpy array and normalize to [0, 1]
-        image = (image - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]  # Normalize
-        image = np.transpose(image, (2, 0, 1))  # Change from (H, W, C) to (C, H, W)
-        image = np.expand_dims(image, axis=0)  # Add batch dimension
-        return image.astype(np.float32)  # Ensure the output is float32
-
-    orig_image = Image.fromarray(input_image)
-    input_images = transform_image(
-        orig_image
-    )  # This will already have the correct shape
-
-    # 记录加载onnx模型的开始时间
-    load_start_time = time()
+        # 返回原始图像作为后备方案
+        h, w = input_image.shape[:2]
+        mask = np.full((h, w), 255, dtype=np.uint8)
+        b, g, r = cv2.split(np.uint8(input_image))
+        output_image = cv2.merge((b, g, r, mask))
+        return output_image
 
     # 如果RUN_MODE不是野兽模式，则不加载模型
     if BIREFNET_V1_LITE_SESS is None:
-        # print("首次加载birefnet-v1-lite模型...")
-        if ONNX_DEVICE == "GPU":
-            print("onnxruntime-gpu已安装，尝试使用CUDA加载模型")
-            try:
-                import torch
-            except ImportError:
-                print(
-                    "torch未安装，尝试直接使用onnxruntime-gpu加载模型，这需要配置好CUDA和cuDNN"
-                )
-            BIREFNET_V1_LITE_SESS = load_onnx_model(checkpoint_path)
-        else:
-            BIREFNET_V1_LITE_SESS = load_onnx_model(checkpoint_path, set_cpu=True)
+        BIREFNET_V1_LITE_SESS = load_onnx_model(checkpoint_path, set_cpu=True)
 
-    # 记录加载onnx模型的结束时间
-    load_end_time = time()
+    def resize_image(image):
+        image = image.convert("RGB")
+        model_input_size = (ref_size, ref_size)
+        image = image.resize(model_input_size, Image.BILINEAR)
+        return image
 
-    # 打印加载onnx模型所花的时间
-    print(f"Loading ONNX model took {load_end_time - load_start_time:.4f} seconds")
+    orig_image = Image.fromarray(input_image)
+    image = resize_image(orig_image)
+    im_np = np.array(image).astype(np.float32)
+    im_np = im_np.transpose(2, 0, 1)  # Change to CxHxW format
+    im_np = np.expand_dims(im_np, axis=0)  # Add batch dimension
+    im_np = im_np / 255.0  # Normalize to [0, 1]
+    im_np = (im_np - 0.5) / 0.5  # Normalize to [-1, 1]
 
-    input_name = BIREFNET_V1_LITE_SESS.get_inputs()[0].name
-    print(onnxruntime.get_device(), BIREFNET_V1_LITE_SESS.get_providers())
+    # Inference
+    result = BIREFNET_V1_LITE_SESS.run(None, {BIREFNET_V1_LITE_SESS.get_inputs()[0].name: im_np})[0]
 
-    time_st = time()
-    pred_onnx = BIREFNET_V1_LITE_SESS.run(None, {input_name: input_images})[
-        -1
-    ]  # Use float32 input
-    pred_onnx = np.squeeze(pred_onnx)  # Use numpy to squeeze
-    result = 1 / (1 + np.exp(-pred_onnx))  # Sigmoid function using numpy
-    print(f"Inference time: {time() - time_st:.4f} seconds")
+    # Post process
+    result = np.squeeze(result)
+    ma = np.max(result)
+    mi = np.min(result)
+    result = (result - mi) / (ma - mi)  # Normalize to [0, 1]
 
     # Convert to PIL image
     im_array = (result * 255).astype(np.uint8)
     pil_im = Image.fromarray(
         im_array, mode="L"
-    )  # Ensure mask is single channel (L mode)
+    )  # Convert to PIL image
 
-    # Resize the mask to match the original image size
-    pil_im = pil_im.resize(orig_image.size, Image.BILINEAR)
+    # Resize to original size
+    pil_im = pil_im.resize((orig_image.width, orig_image.height), Image.BILINEAR)
 
-    # Paste the mask on the original image
-    new_im = Image.new("RGBA", orig_image.size, (0, 0, 0, 0))
-    new_im.paste(orig_image, mask=pil_im)
+    # Create output image
+    mask = np.array(pil_im)
+    b, g, r = cv2.split(np.uint8(input_image))
+    output_image = cv2.merge((b, g, r, mask))
     
     # 如果RUN_MODE不是野兽模式，则释放模型
     if os.getenv("RUN_MODE") != "beast":
         BIREFNET_V1_LITE_SESS = None
 
-    return np.array(new_im)
+    return output_image

@@ -4,7 +4,9 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt && pip install -r requirements-app.txt && python scripts/download_model.py --models modnet_photographic_portrait_matting hivision_modnet rmbg-1.4 retinaface-resnet50"
-    startCommand: "python deploy_api.py"
+    startCommand: "python -u deploy_api.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.6
+      - key: RUN_MODE
+        value: beast

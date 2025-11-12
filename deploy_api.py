@@ -11,6 +11,9 @@ else:
 
 print(f"Python路径: {sys.path}")
 
+# 设置环境变量以优化内存使用
+os.environ["RUN_MODE"] = "beast"
+
 from fastapi import FastAPI, UploadFile, Form, File
 from hivision import IDCreator
 from hivision.error import FaceError

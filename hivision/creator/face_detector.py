@@ -171,13 +171,22 @@ def detect_face_retinaface(ctx: Context):
     from time import time
 
     global RETINAFCE_SESS
+    
+    retinaface_model_path = os.path.join(base_dir, "retinaface/weights/retinaface-resnet50.onnx")
+    
+    # 检查模型文件是否存在
+    if not os.path.exists(retinaface_model_path):
+        print(f"RetinaFace model file not found: {retinaface_model_path}")
+        # 回退到MTCNN检测器
+        detect_face_mtcnn(ctx)
+        return
 
     if RETINAFCE_SESS is None:
         # 计算用时
         tic = time()
         faces_dets, sess = retinaface_detect_faces(
             ctx.origin_image,
-            os.path.join(base_dir, "retinaface/weights/retinaface-resnet50.onnx"),
+            retinaface_model_path,
             sess=None,
         )
         RETINAFCE_SESS = sess
@@ -185,7 +194,7 @@ def detect_face_retinaface(ctx: Context):
         tic = time()
         faces_dets, _ = retinaface_detect_faces(
             ctx.origin_image,
-            os.path.join(base_dir, "retinaface/weights/retinaface-resnet50.onnx"),
+            retinaface_model_path,
             sess=RETINAFCE_SESS,
         )
 
@@ -215,5 +224,5 @@ def detect_face_retinaface(ctx: Context):
     ctx.face["roll_angle"] = roll_angle
 
     # 如果RUN_MODE不是野兽模式，则释放模型
-    if os.getenv("RUN_MODE") == "beast":
+    if os.getenv("RUN_MODE") != "beast":
         RETINAFCE_SESS = None
