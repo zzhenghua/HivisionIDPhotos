@@ -381,6 +381,10 @@ async def idphoto_crop_inference(
 
 if __name__ == "__main__":
     import uvicorn
+    import os
 
-    # 在8080端口运行推理服务
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    # 读取Render平台分配的端口，默认为8080
+    port = int(os.environ.get('PORT', 8080))
+
+    # 在指定端口运行推理服务
+    uvicorn.run(app, host="0.0.0.0", port=port)
