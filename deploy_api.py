@@ -108,17 +108,12 @@ async def idphoto_inference(
             sharpen_strength=sharpen_strength,
             saturation_strength=saturation_strength,
         )
-<<<<<<< HEAD
-        
-        result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
-=======
     except FaceError:
         result_message = {"status": False}
     # 如果检测到人脸数量等于1, 则返回标准证和高清照结果（png 4通道图像）
     else:
         result_image_standard_bytes = save_image_dpi_to_bytes(result.standard, None, dpi)
         
->>>>>>> parent of f807e1f (333)
         result_message = {
             "status": True,
             "image_base64_standard": bytes_2_base64(result_image_standard_bytes),
@@ -163,32 +158,15 @@ async def human_matting_inference(
             img,
             change_bg_only=True,
         )
-<<<<<<< HEAD
-        
-        result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.matting, cv2.COLOR_RGBA2BGRA), None, dpi)
-        
-=======
     except FaceError:
         result_message = {"status": False}
 
     else:
         result_image_standard_bytes = save_image_dpi_to_bytes(cv2.cvtColor(result.standard, cv2.COLOR_RGBA2BGRA), None, dpi)
->>>>>>> parent of f807e1f (333)
         result_message = {
             "status": True,
             "image_base64": bytes_2_base64(result_image_standard_bytes),
         }
-<<<<<<< HEAD
-    except FaceError:
-        result_message = {"status": False}
-    except Exception as e:
-        print(f"Error processing image: {e}")
-        import traceback
-        traceback.print_exc()
-        result_message = {"status": False, "error": str(e)}
-
-=======
->>>>>>> parent of f807e1f (333)
     return result_message
 
 
